@@ -5,6 +5,7 @@ const parserService = require('../services/parserService');
 const aiService = require('../services/aiService');
 const atsService = require('../services/atsService');
 const exportService = require('../services/exportService');
+const Resume = require('../models/Resume');
 
 // Multer in-memory storage for file uploads
 const upload = multer({
@@ -70,19 +71,27 @@ router.post('/tailor-resume', async (req, res) => {
     const atsScore = atsService.calculateAtsScore(structure, jobAnalysis, tailoredData);
 
     const record = {
-      id: Date.now().toString(),
       candidateName: candidateName || 'Candidate',
       jobTitle: jobTitle || 'Target Role',
       jobDescription,
       rawResumeText: resumeText,
-      parsedStructure: structure,
+      parsedSections: structure,
       jobAnalysis,
       tailoredData,
       atsScore,
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
 
-    // Store in history
+    // Save to MongoDB
+    try {
+      const savedDoc = await Resume.create(record);
+      record.id = savedDoc._id.toString();
+    } catch (dbErr) {
+      console.warn('MongoDB save skipped/failed, using in-memory backup:', dbErr.message);
+      record.id = Date.now().toString();
+    }
+
+    // Backup to in-memory store
     inMemoryHistory.unshift(record);
     if (inMemoryHistory.length > 20) inMemoryHistory.pop();
 
@@ -123,7 +132,16 @@ router.post('/export/docx', async (req, res) => {
  * @route GET /api/history
  * Fetch past resume optimization sessions.
  */
-router.get('/history', (req, res) => {
+router.get('/history', async (req, res) => {
+  try {
+    const mongoHistory = await Resume.find().sort({ createdAt: -1 }).limit(20);
+    if (mongoHistory && mongoHistory.length > 0) {
+      return res.json({ success: true, history: mongoHistory });
+    }
+  } catch (e) {
+    // fallback to inMemoryHistory if MongoDB query fails
+  }
+
   res.json({
     success: true,
     history: inMemoryHistory
@@ -142,3 +160,4 @@ router.get('/health', (req, res) => {
 });
 
 module.exports = router;
+
