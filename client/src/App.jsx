@@ -9,10 +9,11 @@ import BulletRewriter from './components/BulletRewriter';
 import ResumePreview from './components/ResumePreview';
 import HistoryModal from './components/HistoryModal';
 
-// Set production API URL if provided in environment variables
+// Production Deployment Config - Vercel Build Trigger v1.0.1
 if (import.meta.env.VITE_API_BASE_URL) {
   axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 }
+
 
 
 export default function App() {
