@@ -9,6 +9,12 @@ import BulletRewriter from './components/BulletRewriter';
 import ResumePreview from './components/ResumePreview';
 import HistoryModal from './components/HistoryModal';
 
+// Set production API URL if provided in environment variables
+if (import.meta.env.VITE_API_BASE_URL) {
+  axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
+}
+
+
 export default function App() {
   const [candidateName, setCandidateName] = useState('');
   const [resumeData, setResumeData] = useState(null); // { fileName, rawText, parsedStructure }
