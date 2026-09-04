@@ -20,19 +20,32 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // API Routes
 app.use('/api', apiRoutes);
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({
-    message: '🚀 AI-Powered Resume Tailor Backend API is running.',
-    endpoints: {
-      health: '/api/health',
-      uploadResume: 'POST /api/upload-resume',
-      tailorResume: 'POST /api/tailor-resume',
-      exportDocx: 'POST /api/export/docx',
-      history: 'GET /api/history'
-    }
+// Serve frontend React app if built in client/dist
+const path = require('path');
+const fs = require('fs');
+const clientDistPath = path.join(__dirname, '../client/dist');
+
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(clientDistPath, 'index.html'));
   });
-});
+} else {
+  // Root API route fallback
+  app.get('/', (req, res) => {
+    res.json({
+      message: '🚀 AI-Powered Resume Tailor Backend API is running.',
+      endpoints: {
+        health: '/api/health',
+        uploadResume: 'POST /api/upload-resume',
+        tailorResume: 'POST /api/tailor-resume',
+        exportDocx: 'POST /api/export/docx',
+        history: 'GET /api/history'
+      }
+    });
+  });
+}
 
 // Optional MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/resumetailor';
